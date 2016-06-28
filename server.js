@@ -1,25 +1,34 @@
 import koa from 'koa'
+import mount from 'koa-mount'
 import serve from 'koa-static'
-import {MongoClient} from 'mongodb'
+import convert from 'koa-convert'
+import mongoose from 'mongoose'
+import graphQLHTTP from 'koa-graphql'
+
+import schema from './data/schema'
 
 const APP_PORT = 3000;
+const MONGO_PORT = 27017;
+const GRAPHQL_PORT = 5000;
+
+// Connect to the db
+mongoose.connect('mongodb://localhost:${MONGO_PORT}/twitter-react');
+
+// Expose a GraphQL endpoint
+const graphQLServer = new koa();
+
+graphQLServer.use(mount('/', convert(graphQLHTTP({ schema, pretty: true, graphiql: true }))));
+
+graphQLServer.listen(GRAPHQL_PORT, () => console.log(
+  `GraphQL Server is now running on http://localhost:${GRAPHQL_PORT}`
+));
 
 
-(async () => {
+// Serve static resources
+const app = new koa();
 
-		// Connect to the db
-		const db = await MongoClient.connect("mongodb://localhost:27017/twitter-react");
+app.use(serve(__dirname + '/dist'));
 
-		const users = await db.collection("users").find({}).toArray();
-		console.log(users);
-
-
-		// Serve static resources
-		const app = new koa();
-
-		app.use(serve(__dirname + '/dist'));
-
-		app.listen(APP_PORT, () => {
-		  console.log(`App is now running on http://localhost:${APP_PORT}`);
-		});
-})();
+app.listen(APP_PORT, () => {
+  console.log(`App is now running on http://localhost:${APP_PORT}`);
+});
