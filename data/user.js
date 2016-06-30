@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-var UserSchema = new mongoose.Schema({
+let UserSchema = new mongoose.Schema({
   name: {
     type: String
   },
@@ -10,9 +10,39 @@ var UserSchema = new mongoose.Schema({
   followers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  }],
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }]
 });
 
-var User = mongoose.model('User', UserSchema);
+UserSchema.set('toJSON', {getters: true});
 
-export default User;
+const User = mongoose.model('User', UserSchema);
+
+async function getUsers() {
+	const users = await User.find({});
+	console.log(users);
+  return users;
+}
+
+async function getUserById(id) {
+	const user = await User.findOne({id: id});
+	return user;
+}
+
+async function getUserByUserName(userName) {
+	const user = await User.findOne({userName: userName});
+	return user;
+}
+
+function getFollowers(user) {
+	return user.followers;
+}
+
+function getFollowing(user) {
+	return user.following;
+}
+
+export {User, getUsers, getUserById, getUserByUserName, getFollowing, getFollowers}
