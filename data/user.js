@@ -2,10 +2,10 @@ import mongoose from 'mongoose';
 
 let UserSchema = new mongoose.Schema({
   name: {
-    type: String
+     type: String, required: true, trim: true
   },
-  userName: {
-  	type: String
+  username: {
+  	 type: String, required: true, trim: true,  unique : true
   },
   followers: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -15,6 +15,9 @@ let UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }]
+},
+{
+  timestamps: true
 });
 
 UserSchema.set('toJSON', {getters: true});
@@ -22,19 +25,15 @@ UserSchema.set('toJSON', {getters: true});
 const User = mongoose.model('User', UserSchema);
 
 async function getUsers() {
-	const users = await User.find({});
-	console.log(users);
-  return users;
+	return await User.find({});
 }
 
 async function getUserById(id) {
-	const user = await User.findOne({id: id});
-	return user;
+	return await User.findOne({id: id});
 }
 
-async function getUserByUserName(userName) {
-	const user = await User.findOne({userName: userName});
-	return user;
+async function getUserByUsername(username) {
+	return await User.findOne({username: username});
 }
 
 function getFollowers(user) {
@@ -45,4 +44,9 @@ function getFollowing(user) {
 	return user.following;
 }
 
-export {User, getUsers, getUserById, getUserByUserName, getFollowing, getFollowers}
+
+async function createUser(name, username) {
+  return await User.create({name: name, username: username});
+}
+
+export {User, getUsers, getUserById, getUserByUsername, getFollowing, getFollowers, createUser}

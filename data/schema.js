@@ -22,7 +22,7 @@ import {
   connectionFromPromisedArray
 } from 'graphql-relay';
 
-import {User, getUsers, getUserById, getUserByUserName, getFollowing, getFollowers} from './user'
+import {User, getUsers, getUserById, getUserByUsername, getFollowing, getFollowers, createUser} from './user'
 
 const { nodeInterface, nodeField } = nodeDefinitions(
   (globalId) => {
@@ -51,16 +51,22 @@ const userType = new GraphQLObjectType({
 		id: globalIdField('User'),
 		name: { type: GraphQLString },
 		username: { type: GraphQLString },
-		followers: {
-			type: userConnection,
+		followerConnection: {
+			type: userConnection.connectionType,
 			description: 'Users who follow this user',
-			args: connectionArgs,
+			args: {
+        ...connectionArgs,
+        query: { type: GraphQLString }
+      },
 			resolve: (_, args) => connectionFromArray(getFollowers(), args)
 		},
-		following: {
-			type: userConnection,
+		followingConnection: {
+			type: userConnection.connectionType,
 			description: 'Users who this user follows',
-			args: connectionArgs,
+			args: {
+        ...connectionArgs,
+        query: { type: GraphQLString }
+      },
 			resolve: (_, args) => connectionFromArray(getFollowing(), args)
 		}
 	}),
@@ -71,7 +77,7 @@ const userType = new GraphQLObjectType({
 /**
  * Define connection types here
  */
-const { connectionType: userConnection } = connectionDefinitions({ name: 'User', nodeType: userType });
+const userConnection= connectionDefinitions({ name: 'User', nodeType: userType });
 
 
 // Define Queries here
@@ -80,7 +86,7 @@ const UserQueries = {
     type: new GraphQLList(userType),
     name: 'users',
     description: 'A user list',
-    resolve: () => {return getUsers()}
+    resolve: () => getUsers()
   },
   userId: {
     type: userType,
@@ -93,18 +99,42 @@ const UserQueries = {
       return getUserById(id)
     }
   },
-  userName: {
+  username: {
   	type: userType,
     args: {
       username: {
       	type: GraphQLString
       }
     },
-    resolve: (root, {userName}) => {
-      return getUserByUserName(userName);
+    resolve: (root, {username}) => {
+      return getUserByUsername(username);
     }
   }
 };
+
+
+const UserMutations = {
+  createUser: mutationWithClientMutationId({
+    name: 'CreateUser',
+
+    inputFields: {
+      name: { type: new GraphQLNonNull(GraphQLString) },
+      username: { type: new GraphQLNonNull(GraphQLString) }
+    },
+
+    outputFields: {
+      userEdge: {
+        type: userConnection.edgeType,
+        resolve: (obj) => ({ node: obj.ops[0], cursor: obj.insertedId })
+      },
+      users: {
+        type: userType,
+        resolve: () => getUsers()
+      }
+    },
+    mutateAndGetPayload: ({name, username}) => createUser(name, username)
+  })
+}
 
 
 
@@ -113,12 +143,20 @@ const RootQuery = new GraphQLObjectType({
 
   fields: () => ({
     userId: UserQueries.userId,
-    userName: UserQueries.userName,
+    username: UserQueries.username,
     users: UserQueries.users,
     node: nodeField
   })
 });
 
+const RootMutation = new GraphQLObjectType({
+    name: 'RootMutation',
+    fields: () => ({
+      createUser: UserMutations.createUser
+    })
+  })
+
 export default new GraphQLSchema({
-	query: RootQuery
+	query: RootQuery,
+  mutation: RootMutation
 });
