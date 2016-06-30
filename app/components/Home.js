@@ -1,5 +1,6 @@
 import React from 'react'
 import {Link} from 'react-router'
+import Relay from 'react-relay'
 
 export default class Home extends React.Component {
 	render () {

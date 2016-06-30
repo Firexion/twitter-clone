@@ -4,6 +4,7 @@ import serve from 'koa-static'
 import convert from 'koa-convert'
 import mongoose from 'mongoose'
 import graphQLHTTP from 'koa-graphql'
+import proxy from 'koa-proxy'
 
 import schema from './data/schema'
 
@@ -26,6 +27,10 @@ graphQLServer.listen(GRAPHQL_PORT, () => console.log(
 
 // Serve static resources
 const app = new koa();
+
+app.use(mount('/graphql', proxy({
+  url: `http://localhost:${GRAPHQL_PORT}`
+})));
 
 app.use(serve(__dirname + '/dist'));
 

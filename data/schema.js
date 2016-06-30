@@ -23,6 +23,7 @@ import {
 } from 'graphql-relay';
 
 import {User, getUsers, getUserById, getUserByUsername, getFollowing, getFollowers, createUser} from './user'
+import {getViewer} from './viewer'
 
 const { nodeInterface, nodeField } = nodeDefinitions(
   (globalId) => {
@@ -30,6 +31,8 @@ const { nodeInterface, nodeField } = nodeDefinitions(
     switch (type) {
     	case User:
     			return getUserById(id)
+      case Viewer:
+        return getViewer()
     	default:
     		return null;
     }
@@ -38,12 +41,41 @@ const { nodeInterface, nodeField } = nodeDefinitions(
   	switch (obj.constructor) {
   		case User:
   			return userType;
+      case Viewer:
+        return viewerType;
   		default:
   			return null;
   	}
   }
 );
 
+
+const viewerType = new GraphQLObjectType({
+  name: 'Viewer',
+  fields: () => ({
+    id: globalIdField('Viewer'),
+    users: {
+      type: userConnection.connectionType,
+      description: 'All users',
+      args: {
+        ...connectionArgs,
+        query: { type: GraphQLString }
+      },
+      resolve: (_, args) => connectionFromPromisedArray(getUsers(), args)
+    },
+    user: {
+      type: userType,
+      description: 'Single users',
+      args: {
+        username: {
+          type: GraphQLString
+        }
+      },
+      resolve: (_, args) => getUserByUsername(args.username)
+    }
+  }),
+  interfaces: [nodeInterface]
+});
 
 const userType = new GraphQLObjectType({
 	name: 'User',
@@ -137,18 +169,6 @@ const UserMutations = {
 }
 
 
-
-const RootQuery = new GraphQLObjectType({
-  name: 'RootQuery',      //Return this type of object
-
-  fields: () => ({
-    userId: UserQueries.userId,
-    username: UserQueries.username,
-    users: UserQueries.users,
-    node: nodeField
-  })
-});
-
 const RootMutation = new GraphQLObjectType({
     name: 'RootMutation',
     fields: () => ({
@@ -157,6 +177,15 @@ const RootMutation = new GraphQLObjectType({
   })
 
 export default new GraphQLSchema({
-	query: RootQuery,
+	query: new GraphQLObjectType({
+    name: 'Query', 
+    fields: () => ({
+      viewer: {
+        type: viewerType,
+        resolve: () => getViewer(),
+      },
+      node: nodeField
+    })
+  }),
   mutation: RootMutation
 });

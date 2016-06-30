@@ -1,0 +1,60 @@
+schema {
+  query: Query
+  mutation: RootMutation
+}
+
+input CreateUserInput {
+  name: String!
+  username: String!
+  clientMutationId: String!
+}
+
+type CreateUserPayload {
+  userEdge: UserEdge
+  users: User
+  clientMutationId: String!
+}
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Query {
+  viewer: Viewer
+  node(id: ID!): Node
+}
+
+type RootMutation {
+  createUser(input: CreateUserInput!): CreateUserPayload
+}
+
+type User implements Node {
+  id: ID!
+  name: String
+  username: String
+  followerConnection(after: String, first: Int, before: String, last: Int, query: String): UserConnection
+  followingConnection(after: String, first: Int, before: String, last: Int, query: String): UserConnection
+}
+
+type UserConnection {
+  pageInfo: PageInfo!
+  edges: [UserEdge]
+}
+
+type UserEdge {
+  node: User
+  cursor: String!
+}
+
+type Viewer implements Node {
+  id: ID!
+  users(after: String, first: Int, before: String, last: Int, query: String): UserConnection
+  user(username: String): User
+}
