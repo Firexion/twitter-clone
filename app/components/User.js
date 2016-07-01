@@ -1,14 +1,19 @@
 import React, { Component, PropTypes } from 'react';
 import Relay from 'react-relay';
 import {Link} from 'react-router'
+import { ListItem, ListItemContent, ListItemAction, Button } from 'react-mdl';
 
 export default class User extends Component {
 	render() {
 		const user = this.props.user;
 		return (
-			<Link to= {"user/" + user.username}>
-				<button type='button' className='btn btn-lg btn-success'>{user.name}</button>
-			</Link>
+			<ListItem>
+				<ListItemAction>
+					<Link to= {"/user/" + user.username}>
+						<ListItemContent avatar="person">{user.name}</ListItemContent>
+					</Link>
+				</ListItemAction>
+			</ListItem>
 		);
 	}
 }

@@ -1,12 +1,14 @@
 import React from 'react'
 import Relay from 'react-relay';
 
+import { Grid } from 'react-mdl';
+
 export default class Main extends React.Component {
 	render () {
 		return (
-			<div className='main-container'>
+			<Grid>
 				{this.props.children}
-			</div>
+			</Grid>
 		)
 	}
 }
