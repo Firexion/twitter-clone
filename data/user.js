@@ -49,4 +49,8 @@ async function createUser(name, username) {
   return await User.create({name: name, username: username});
 }
 
-export {User, getUsers, getUserById, getUserByUsername, getFollowing, getFollowers, createUser}
+async function deleteUser(id) {
+  return await User.findById(id).remove();
+}
+
+export {User, getUsers, getUserById, getUserByUsername, getFollowing, getFollowers, createUser, deleteUser}

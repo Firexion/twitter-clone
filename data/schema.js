@@ -22,7 +22,7 @@ import {
   connectionFromPromisedArray
 } from 'graphql-relay';
 
-import {User, getUsers, getUserById, getUserByUsername, getFollowing, getFollowers, createUser} from './user'
+import * as UserModel from './user'
 import {getViewer} from './viewer'
 
 const { nodeInterface, nodeField } = nodeDefinitions(
@@ -30,7 +30,7 @@ const { nodeInterface, nodeField } = nodeDefinitions(
     const { type, id } = fromGlobalId(globalId);
     switch (type) {
     	case User:
-    			return getUserById(id)
+    			return UserModel.getUserById(id)
       case Viewer:
         return getViewer()
     	default:
@@ -61,7 +61,7 @@ const viewerType = new GraphQLObjectType({
         ...connectionArgs,
         query: { type: GraphQLString }
       },
-      resolve: (_, args) => connectionFromPromisedArray(getUsers(), args)
+      resolve: (_, args) => connectionFromPromisedArray(UserModel.getUsers(), args)
     },
     user: {
       type: userType,
@@ -71,7 +71,7 @@ const viewerType = new GraphQLObjectType({
           type: GraphQLString
         }
       },
-      resolve: (_, args) => getUserByUsername(args.username)
+      resolve: (_, args) => UserModel.getUserByUsername(args.username)
     }
   }),
   interfaces: [nodeInterface]
@@ -90,7 +90,7 @@ const userType = new GraphQLObjectType({
         ...connectionArgs,
         query: { type: GraphQLString }
       },
-			resolve: (_, args) => connectionFromArray(getFollowers(), args)
+			resolve: (_, args) => connectionFromArray(UserModel.getFollowers(), args)
 		},
 		followingConnection: {
 			type: userConnection.connectionType,
@@ -99,7 +99,7 @@ const userType = new GraphQLObjectType({
         ...connectionArgs,
         query: { type: GraphQLString }
       },
-			resolve: (_, args) => connectionFromArray(getFollowing(), args)
+			resolve: (_, args) => connectionFromArray(UserModel.getFollowing(), args)
 		}
 	}),
   interfaces: [nodeInterface]
@@ -118,7 +118,7 @@ const UserQueries = {
     type: new GraphQLList(userType),
     name: 'users',
     description: 'A user list',
-    resolve: () => getUsers()
+    resolve: () => UserModel.getUsers()
   },
   userId: {
     type: userType,
@@ -128,7 +128,7 @@ const UserQueries = {
       }
     },
     resolve: (root, {id}) => {
-      return getUserById(id)
+      return UserModel.getUserById(id)
     }
   },
   username: {
@@ -139,7 +139,7 @@ const UserQueries = {
       }
     },
     resolve: (root, {username}) => {
-      return getUserByUsername(username);
+      return UserModel.getUserByUsername(username);
     }
   }
 };
@@ -161,10 +161,32 @@ const UserMutations = {
       },
       users: {
         type: userType,
-        resolve: () => getUsers()
+        resolve: () => UserModel.getUsers()
       }
     },
-    mutateAndGetPayload: ({name, username}) => createUser(name, username)
+    mutateAndGetPayload: ({name, username}) => UserModel.createUser(name, username)
+  }),
+  deleteUser: mutationWithClientMutationId({
+    name: 'DeleteUser',
+
+    inputFields: {
+      id: { type: new GraphQLNonNull(GraphQLString) }
+    },
+    outputFields: {
+      deletedUserId: {
+        type: GraphQLID,
+        resolve: ({id}) => id,
+      },
+      viewer: {
+        type: viewerType,
+        resolve: () => getViewer(),
+      },
+    },
+    mutateAndGetPayload: ({id}) => {
+      const localUserId = fromGlobalId(id).id;
+      UserModel.deleteUser(localUserId);
+      return {id};
+    }
   })
 }
 
@@ -172,7 +194,8 @@ const UserMutations = {
 const RootMutation = new GraphQLObjectType({
     name: 'RootMutation',
     fields: () => ({
-      createUser: UserMutations.createUser
+      createUser: UserMutations.createUser,
+      deleteUser: UserMutations.deleteUser
     })
   })
 
